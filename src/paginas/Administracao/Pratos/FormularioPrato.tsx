@@ -1,26 +1,43 @@
 import { TextField, Button, Typography, Box, Container, Paper, FormControl, InputLabel, Select, MenuItem } from '@mui/material'
 import React, { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import http from '../../../http'
+import IPrato from '../../../interfaces/IPrato'
 import IRestaurante from '../../../interfaces/IRestaurante'
 import ITag from '../../../interfaces/ITag'
 
 const FormularioPrato = () => {
+
+    const parametros = useParams()
 
     const [nomePrato, setNomePrato] = useState('')
     const [descricao, setDescricao] = useState('')
     const [tag, setTag] = useState('')
     const [restaurante, setRestaurante] = useState('')
     const [imagem, setImagem] = useState<File | null>(null)
-
     const [tags, setTags] = useState<ITag[]>([])
     const [restaurantes, setRestaurantes] = useState<IRestaurante[]>([])
 
     useEffect(() => {
+
         http.get< { tags: ITag[] } > ('tags/')
             .then(resposta => setTags(resposta.data.tags))
+
         http.get<  IRestaurante[]  > ('restaurantes/')
             .then(resposta => setRestaurantes(resposta.data))
+
     }, [])
+
+    useEffect(() => {
+        if (parametros.id) {
+             http.get<IPrato>(`pratos/${parametros.id}/`)
+                .then(resposta => {
+                    setNomePrato(resposta.data.nome)
+                    setDescricao(resposta.data.descricao)
+                    setTag(resposta.data.tag)
+                })
+        }
+    }, [parametros])
 
     const selecionarArquivo = (evento: React.ChangeEvent<HTMLInputElement>) => {
         if (evento.target.files?.length) {
@@ -45,7 +62,19 @@ const FormularioPrato = () => {
             formData.append('imagem', imagem)
         }
         
-        http.request({
+        if(parametros.id) {
+            http.patch(`pratos/${parametros.id}/`, {
+                nome: nomePrato,
+                descricao: descricao,
+                tag: tag,
+                restaurante: restaurante
+            })
+            .then(() => {
+                alert("Restaurante atualizado com sucesso")
+            })  
+
+        } else {
+            http.request({
             url: 'pratos/',
             method: 'POST',
             headers: {
@@ -61,8 +90,8 @@ const FormularioPrato = () => {
                 alert('Prato cadastrado com sucesso')
             })
             .catch(erro => console.log(erro))
+        }       
     }
-
   return (
     <>
 
